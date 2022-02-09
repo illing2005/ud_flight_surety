@@ -62,6 +62,14 @@ contract("Flight Surety Tests", async (accounts) => {
     await config.flightSuretyData.setOperatingStatus(true);
   });
 
+  it("(airline) creates first airline on deployment", async () => {
+    const airline = await config.flightSuretyData.getAirline(
+      config.firstAirline
+    );
+    assert.equal(airline[0], config.firstAirline);
+    assert.equal(airline[1], 1);
+  });
+
   // it("(airline) cannot register an Airline using registerAirline() if it is not funded", async () => {
   //   // ARRANGE
   //   let newAirline = accounts[2];

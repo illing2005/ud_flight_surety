@@ -13,16 +13,33 @@ contract FlightSuretyData {
     bool private operational = true; // Blocks all state changes throughout the contract if false
     mapping(address => uint256) private authorizedContracts;
 
+    struct Airline {
+        uint256 id;
+        uint256 funds;
+        bool isActive;
+        string name;
+    }
+    uint256 private airlinesCount = 0;
+    mapping(address => Airline) airlines;
+
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
 
     /**
      * @dev Constructor
-     *      The deploying account becomes contractOwner
+     *      The deploying account becomes contractOwner and register first airline
      */
-    constructor() public {
+    constructor(address firstAirline) public {
         contractOwner = msg.sender;
+
+        airlinesCount = airlinesCount.add(1);
+        airlines[firstAirline] = Airline({
+            id: airlinesCount,
+            name: "First Airline",
+            isActive: true,
+            funds: 0
+        });
     }
 
     /********************************************************************************************/
@@ -58,6 +75,12 @@ contract FlightSuretyData {
             authorizedContracts[msg.sender] == 1,
             "Caller is not contract owner"
         );
+        _;
+    }
+
+    modifier requireAirlineExists(address _address)
+    {
+        require(airlines[_address].id > 0, "Airline does not exists");
         _;
     }
 
@@ -100,6 +123,25 @@ contract FlightSuretyData {
     /********************************************************************************************/
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
+
+    function getAirline(address _airline)
+        external
+        view
+        requireAirlineExists(_airline)
+        returns (
+            address airlineAddress,
+            uint256 id,
+            bool isActive,
+            string name,
+            uint256 funds
+        )
+    {
+        airlineAddress = _airline;
+        id = airlines[airlineAddress].id;
+        isActive = airlines[_airline].isActive;
+        name = airlines[_airline].name;
+        funds = airlines[_airline].funds;
+    }
 
     /**
      * @dev Add an airline to the registration queue
