@@ -49,11 +49,10 @@ contract("Flight Surety Tests", async (accounts) => {
   });
 
   it(`(multiparty) can block access to functions using requireIsOperational when operating status is false`, async function () {
-    await config.flightSuretyData.setOperatingStatus(false);
-
+    await config.flightSuretyApp.setOperatingStatus(false);
     let reverted = false;
     try {
-      await config.flightSurety.setTestingMode(true);
+      await config.flightSuretyApp.registerAirline();
     } catch (e) {
       reverted = true;
     }
@@ -63,23 +62,23 @@ contract("Flight Surety Tests", async (accounts) => {
     await config.flightSuretyData.setOperatingStatus(true);
   });
 
-  it("(airline) cannot register an Airline using registerAirline() if it is not funded", async () => {
-    // ARRANGE
-    let newAirline = accounts[2];
-
-    // ACT
-    try {
-      await config.flightSuretyApp.registerAirline(newAirline, {
-        from: config.firstAirline,
-      });
-    } catch (e) {}
-    let result = await config.flightSuretyData.isAirline.call(newAirline);
-
-    // ASSERT
-    assert.equal(
-      result,
-      false,
-      "Airline should not be able to register another airline if it hasn't provided funding"
-    );
-  });
+  // it("(airline) cannot register an Airline using registerAirline() if it is not funded", async () => {
+  //   // ARRANGE
+  //   let newAirline = accounts[2];
+  //
+  //   // ACT
+  //   try {
+  //     await config.flightSuretyApp.registerAirline(newAirline, {
+  //       from: config.firstAirline,
+  //     });
+  //   } catch (e) {}
+  //   let result = await config.flightSuretyData.isAirline.call(newAirline);
+  //
+  //   // ASSERT
+  //   assert.equal(
+  //     result,
+  //     false,
+  //     "Airline should not be able to register another airline if it hasn't provided funding"
+  //   );
+  // });
 });
