@@ -90,4 +90,19 @@ contract("Flight Surety Tests", async (accounts) => {
       "Airline should not be able to register another airline if it hasn't provided funding"
     );
   });
+
+  it("(airline) can add initial funds", async () => {
+    let newAirline = accounts[2];
+    let amount = web3.utils.toWei("10", "ether");
+
+    await config.flightSuretyData.fund({
+      from: config.firstAirline,
+      value: amount,
+    });
+    const isFunded = await config.flightSuretyData.isAirlineFunded(
+      config.firstAirline
+    );
+
+    assert.equal(isFunded, true, "Airline should be able to add funds");
+  });
 });

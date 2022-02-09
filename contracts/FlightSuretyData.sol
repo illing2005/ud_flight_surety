@@ -19,7 +19,7 @@ contract FlightSuretyData {
         bool isActive;
         string name;
     }
-    uint256 public airlinesCount = 0;
+    uint256 private airlinesCount = 0;
     mapping(address => Airline) airlines;
 
     /********************************************************************************************/
@@ -150,6 +150,15 @@ contract FlightSuretyData {
         return airlines[_airline].funds > 0;
     }
 
+    function getAirlineCount()
+        public
+        view
+        requireIsOperational
+        returns (uint256)
+    {
+        return airlinesCount;
+    }
+
     /**
      * @dev Add an airline to the registration queue
      *      Can only be called from FlightSuretyApp contract
@@ -162,7 +171,10 @@ contract FlightSuretyData {
         returns (bool)
     {
         require(_airline != address(0), "Provide a valid address.");
-        require(!bool(airlines[_airline].id > 0), "Airline already registered.");
+        require(
+            !bool(airlines[_airline].id > 0),
+            "Airline already registered."
+        );
 
         airlinesCount = airlinesCount.add(1);
         airlines[_airline] = Airline({
@@ -196,7 +208,16 @@ contract FlightSuretyData {
      *      resulting in insurance payouts, the contract should be self-sustaining
      *
      */
-    function fund() public payable {}
+    function fund() public payable requireIsOperational {
+        uint256 currentFunds = airlines[msg.sender].funds;
+        if (currentFunds == 0) {
+            require(
+                msg.value >= 10 ether,
+                "Initial funding has to be 10 Ether"
+            );
+        }
+        airlines[msg.sender].funds = currentFunds.add(msg.value);
+    }
 
     function getFlightKey(
         address airline,

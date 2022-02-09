@@ -113,8 +113,14 @@ contract FlightSuretyApp {
         requireAirlineIsFunded
         returns (bool success, uint256 votes)
     {
-        success = flightSuretyData.registerAirline(_airline, _name);
-        return (success, 0);
+        // Directly register airline if we have less than 5 airlines
+        if (flightSuretyData.getAirlineCount() < 5) {
+            votes = 5;
+            success = flightSuretyData.registerAirline(_airline, _name);
+        } else {
+            // TODO: Start voting process
+        }
+        return (success, votes);
     }
 
     /**
@@ -321,6 +327,7 @@ contract FlightSuretyApp {
 }
 
 contract FlightSuretyData {
+    function getAirlineCount() view external returns (uint256);
     function registerAirline(address _airline, string _name)
         external
         returns (bool);
