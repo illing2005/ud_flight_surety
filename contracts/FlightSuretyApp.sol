@@ -61,6 +61,14 @@ contract FlightSuretyApp {
         _;
     }
 
+    modifier requireAirlineIsFunded() {
+        require(
+            flightSuretyData.isAirlineFunded(msg.sender),
+            "Registering Airline did not provide any funds"
+        );
+        _;
+    }
+
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
     /********************************************************************************************/
@@ -99,12 +107,13 @@ contract FlightSuretyApp {
      * @dev Add an airline to the registration queue
      *
      */
-    function registerAirline()
+    function registerAirline(address _airline, string _name)
         external
-        view
-        requireIsOperational()
+        requireIsOperational
+        requireAirlineIsFunded
         returns (bool success, uint256 votes)
     {
+        success = flightSuretyData.registerAirline(_airline, _name);
         return (success, 0);
     }
 
@@ -311,4 +320,10 @@ contract FlightSuretyApp {
     // endregion
 }
 
-contract FlightSuretyData {}
+contract FlightSuretyData {
+    function registerAirline(address _airline, string _name)
+        external
+        returns (bool);
+
+    function isAirlineFunded(address _airline) external returns (bool);
+}

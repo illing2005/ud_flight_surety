@@ -19,7 +19,7 @@ contract FlightSuretyData {
         bool isActive;
         string name;
     }
-    uint256 private airlinesCount = 0;
+    uint256 public airlinesCount = 0;
     mapping(address => Airline) airlines;
 
     /********************************************************************************************/
@@ -78,8 +78,7 @@ contract FlightSuretyData {
         _;
     }
 
-    modifier requireAirlineExists(address _address)
-    {
+    modifier requireAirlineExists(address _address) {
         require(airlines[_address].id > 0, "Airline does not exists");
         _;
     }
@@ -143,12 +142,37 @@ contract FlightSuretyData {
         funds = airlines[_airline].funds;
     }
 
+    function isAirline(address _airline) external view returns (bool) {
+        return airlines[_airline].id > 0;
+    }
+
+    function isAirlineFunded(address _airline) external view returns (bool) {
+        return airlines[_airline].funds > 0;
+    }
+
     /**
      * @dev Add an airline to the registration queue
      *      Can only be called from FlightSuretyApp contract
      *
      */
-    function registerAirline() external pure {}
+    function registerAirline(address _airline, string _name)
+        external
+        isCallerAuthorized
+        requireIsOperational
+        returns (bool)
+    {
+        require(_airline != address(0), "Provide a valid address.");
+        require(!bool(airlines[_airline].id > 0), "Airline already registered.");
+
+        airlinesCount = airlinesCount.add(1);
+        airlines[_airline] = Airline({
+            name: _name,
+            id: airlinesCount,
+            isActive: false,
+            funds: 0
+        });
+        return true;
+    }
 
     /**
      * @dev Buy insurance for a flight
