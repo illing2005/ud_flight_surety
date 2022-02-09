@@ -20,6 +20,7 @@ contract FlightSuretyData {
         string name;
     }
     uint256 private airlinesCount = 0;
+    uint256 private fundedAirlinesCount = 0;
     mapping(address => Airline) airlines;
 
     /********************************************************************************************/
@@ -159,6 +160,15 @@ contract FlightSuretyData {
         return airlinesCount;
     }
 
+    function getFundedAirlinesCount()
+        external
+        view
+        requireIsOperational
+        returns (uint256)
+    {
+        return fundedAirlinesCount;
+    }
+
     /**
      * @dev Add an airline to the registration queue
      *      Can only be called from FlightSuretyApp contract
@@ -215,6 +225,7 @@ contract FlightSuretyData {
                 msg.value >= 10 ether,
                 "Initial funding has to be 10 Ether"
             );
+            fundedAirlinesCount = fundedAirlinesCount.add(1);
         }
         airlines[msg.sender].funds = currentFunds.add(msg.value);
     }

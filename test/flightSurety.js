@@ -92,7 +92,6 @@ contract("Flight Surety Tests", async (accounts) => {
   });
 
   it("(airline) can add initial funds", async () => {
-    let newAirline = accounts[2];
     let amount = web3.utils.toWei("10", "ether");
 
     await config.flightSuretyData.fund({
@@ -104,5 +103,95 @@ contract("Flight Surety Tests", async (accounts) => {
     );
 
     assert.equal(isFunded, true, "Airline should be able to add funds");
+  });
+
+  it("(ariline) can register another airline WITHOUT consensus below 5 airlines", async () => {
+    let newAirline = accounts[2];
+    let amount = web3.utils.toWei("10", "ether");
+
+    await config.flightSuretyApp.registerAirline(newAirline, "New Name", {
+      from: config.firstAirline,
+    });
+    await config.flightSuretyData.fund({
+      from: newAirline,
+      value: amount,
+    });
+    let result = await config.flightSuretyData.isAirline.call(newAirline);
+    let airlineCount = await config.flightSuretyData.getAirlineCount.call();
+    assert.equal(result, true);
+    assert.equal(airlineCount, 2);
+  });
+
+  it("(airline) needs at least 50% votes before registering new airline above 5 airlines", async () => {
+    let amount = web3.utils.toWei("10", "ether");
+    let airlineCount = parseInt(
+      await config.flightSuretyData.getAirlineCount.call()
+    );
+
+    // Create and fund additional airlines without voting
+    while (airlineCount < 4) {
+      const newAirline = accounts[airlineCount + 1];
+      await config.flightSuretyApp.registerAirline(
+        newAirline,
+        `Airline ${airlineCount + 1}`,
+        {
+          from: config.firstAirline,
+        }
+      );
+      await config.flightSuretyData.fund({
+        from: newAirline,
+        value: amount,
+      });
+      airlineCount++;
+    }
+    airlineCount = parseInt(
+      await config.flightSuretyData.getAirlineCount.call()
+    );
+    assert.equal(airlineCount, 4);
+
+    // create new airline with voting
+    const newAirline = accounts[airlineCount + 1];
+    await config.flightSuretyApp.registerAirline(
+      newAirline,
+      `Airline ${airlineCount + 1}`,
+      {
+        from: config.firstAirline,
+      }
+    );
+    // airline should not yet have been added
+    let result = await config.flightSuretyData.isAirline.call(newAirline);
+    assert.equal(
+      result,
+      false,
+      "Airline should not be created with just one vote"
+    );
+
+    // airline should be created after third vote
+    await config.flightSuretyApp.registerAirline(
+      newAirline,
+      `Airline ${airlineCount + 1}`,
+      {
+        from: accounts[3],
+      }
+    );
+    result = await config.flightSuretyData.isAirline.call(newAirline);
+    assert.equal(
+      result,
+      false,
+      "Airline should not be created after second vote"
+    );
+    await config.flightSuretyApp.registerAirline(
+      newAirline,
+      `Airline ${airlineCount + 1}`,
+      {
+        from: accounts[4],
+      }
+    );
+    result = await config.flightSuretyData.isAirline.call(newAirline);
+    assert.equal(
+      result,
+      true,
+      "Airline should have been created after third vote"
+    );
   });
 });

@@ -28,6 +28,9 @@ contract FlightSuretyApp {
     FlightSuretyData flightSuretyData;
     bool private operational = true;
 
+    // Variables for airline register voting
+    mapping(address => address[]) private suggestedAirlines;
+
     struct Flight {
         bool isRegistered;
         uint8 statusCode;
@@ -114,11 +117,28 @@ contract FlightSuretyApp {
         returns (bool success, uint256 votes)
     {
         // Directly register airline if we have less than 5 airlines
-        if (flightSuretyData.getAirlineCount() < 5) {
+        if (flightSuretyData.getFundedAirlinesCount() < 4) {
             votes = 5;
             success = flightSuretyData.registerAirline(_airline, _name);
         } else {
-            // TODO: Start voting process
+            // check for duplicate votes
+            bool isDuplicate = false;
+            for (uint256 i = 0; i < suggestedAirlines[_airline].length; i++) {
+                if (suggestedAirlines[_airline][i] == msg.sender) {
+                    isDuplicate = true;
+                    break;
+                }
+            }
+            require(!isDuplicate, "Airline already voted!");
+            // add vote of current sender
+            suggestedAirlines[_airline].push(msg.sender);
+            // check if airline has enough votes
+            votes = suggestedAirlines[_airline].length;
+            // TODO: Calc 50% votes threshold
+            if (votes > flightSuretyData.getFundedAirlinesCount().div(2)) {
+                success = flightSuretyData.registerAirline(_airline, _name);
+                suggestedAirlines[_airline] = new address[](0); // reset votes, Do we really need this?
+            }
         }
         return (success, votes);
     }
@@ -327,7 +347,10 @@ contract FlightSuretyApp {
 }
 
 contract FlightSuretyData {
-    function getAirlineCount() view external returns (uint256);
+    function getAirlineCount() external view returns (uint256);
+
+    function getFundedAirlinesCount() external view returns (uint256);
+
     function registerAirline(address _airline, string _name)
         external
         returns (bool);
