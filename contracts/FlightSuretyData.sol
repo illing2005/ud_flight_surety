@@ -33,7 +33,7 @@ contract FlightSuretyData {
      */
     constructor(address firstAirline) public {
         contractOwner = msg.sender;
-
+        authorizedContracts[msg.sender] = 1;
         airlinesCount = airlinesCount.add(1);
         airlines[firstAirline] = Airline({
             id: airlinesCount,
@@ -74,7 +74,7 @@ contract FlightSuretyData {
     modifier isCallerAuthorized() {
         require(
             authorizedContracts[msg.sender] == 1,
-            "Caller is not contract owner"
+            "Caller is not authorized"
         );
         _;
     }

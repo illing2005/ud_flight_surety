@@ -8,7 +8,6 @@ import "./flightsurety.css";
   let contract = new Contract("localhost", () => {
     // Read transaction
     contract.isOperational((error, result) => {
-      console.log(error, result);
       display("Operational Status", "Check if contract is operational", [
         { label: "Operational Status", error: error, value: result },
       ]);
@@ -28,6 +27,25 @@ import "./flightsurety.css";
         ]);
       });
     });
+
+    DOM.elid("submit-airline").addEventListener("click", () => {
+      const airlineAddress = DOM.elid("airline-address").value;
+      contract.registerAirline(airlineAddress, (error, result) => {
+        display("Airline Status", "", [
+        { label: "Register Airline", error: error, value: result.airline },
+      ]);
+      })
+
+    });
+
+    DOM.elid("submit-fund").addEventListener("click", () => {
+      const amount = DOM.elid("airline-fund").value;
+      contract.fundAirline(amount, (error, result) => {
+        display("Airline Status", "", [
+            { label: "Fund Airline", error: error, value: `${amount} ETH added` }
+            ]);
+      });
+    })
   });
 })();
 

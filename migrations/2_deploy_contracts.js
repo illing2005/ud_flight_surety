@@ -4,8 +4,8 @@ const fs = require("fs");
 
 module.exports = function (deployer) {
   let firstAirline = "0xf17f52151EbEF6C7334FAD080c5704D77216b732";
-  deployer.deploy(FlightSuretyData, firstAirline).then(() => {
-    return deployer.deploy(FlightSuretyApp, FlightSuretyData.address).then(() => {
+  deployer.deploy(FlightSuretyData, firstAirline).then((dataContract) => {
+    return deployer.deploy(FlightSuretyApp, FlightSuretyData.address).then((appContract) => {
       let config = {
         localhost: {
           url: "http://localhost:9545",
@@ -23,6 +23,10 @@ module.exports = function (deployer) {
         JSON.stringify(config, null, "\t"),
         "utf-8"
       );
+
+      // Authorize app contract to call data contract
+      dataContract.authorizeCaller(FlightSuretyApp.address);
+
     });
   });
 };

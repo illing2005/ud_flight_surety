@@ -1,4 +1,5 @@
 import FlightSuretyApp from "../../build/contracts/FlightSuretyApp.json";
+import FlightSuretyData from "../../build/contracts/FlightSuretyData.json";
 import Config from "./config.json";
 import Web3 from "web3";
 
@@ -10,8 +11,13 @@ export default class Contract {
       FlightSuretyApp.abi,
       config.appAddress
     );
+    this.flightSuretyData = new this.web3.eth.Contract(
+      FlightSuretyData.abi,
+      config.dataAddress
+    );
     this.initialize(callback);
     this.owner = null;
+    this.mainAirline = null;
     this.airlines = [];
     this.passengers = [];
   }
@@ -29,7 +35,7 @@ export default class Contract {
       while (this.passengers.length < 5) {
         this.passengers.push(accts[counter++]);
       }
-
+      this.mainAirline = this.airlines[0];
       callback();
     });
   }
@@ -52,6 +58,28 @@ export default class Contract {
       .fetchFlightStatus(payload.airline, payload.flight, payload.timestamp)
       .send({ from: self.owner }, (error, result) => {
         callback(error, payload);
+      });
+  }
+
+  registerAirline(airlineAddress, callback) {
+    let self = this;
+    let payload = {
+      airline: airlineAddress,
+    };
+    self.flightSuretyApp.methods
+      .registerAirline(payload.airline, "")
+      .send({ from: self.mainAirline }, (error, result) => {
+        callback(error, payload);
+      });
+  }
+
+  async fundAirline(amount, callback) {
+    const value = this.web3.utils.toWei(amount, "ether");
+    const self = this;
+    this.flightSuretyData.methods
+      .fund()
+      .send({ from: self.mainAirline, value }, (error, result) => {
+        callback(error, {value});
       });
   }
 }
