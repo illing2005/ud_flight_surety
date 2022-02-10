@@ -54,7 +54,17 @@ import "./flightsurety.css";
             { label: "Flight submitted", error: error, value: `${flightNumber} added` }
             ]);
       });
-    })
+    });
+
+    DOM.elid("submit-insurance").addEventListener("click", () => {
+      const flightNumber = DOM.elid("passenger-flight").value;
+      const amount = DOM.elid("passenger-fund").value;
+      contract.buyInsurance(flightNumber, amount, (error, result) => {
+        display("Passenger Status", "", [
+            { label: "Buy insurance", error: error, value: `${amount} ETH insurance for ${flightNumber} bought` }
+            ]);
+      })
+    });
   });
 })();
 

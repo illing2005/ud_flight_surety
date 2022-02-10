@@ -18,6 +18,7 @@ export default class Contract {
     this.initialize(callback);
     this.owner = null;
     this.mainAirline = null;
+    this.passenger = null;
     this.airlines = [];
     this.passengers = [];
   }
@@ -36,6 +37,7 @@ export default class Contract {
         this.passengers.push(accts[counter++]);
       }
       this.mainAirline = this.airlines[0];
+      this.passenger = this.passengers[0];
       callback();
     });
   }
@@ -90,5 +92,18 @@ export default class Contract {
       .send({ from: self.mainAirline, gas: 1000000 }, (error, result) => {
         callback(error, { flightNumber });
       });
+  }
+
+  async buyInsurance(flightNumber, amount, callback) {
+    const self = this;
+    const value = this.web3.utils.toWei(amount, "ether");
+    this.flightSuretyApp.methods
+      .buyInsurance(flightNumber)
+      .send(
+        { from: self.passenger, value, gas: 1000000 },
+        (error, result) => {
+          callback(error, { flightNumber });
+        }
+      );
   }
 }
