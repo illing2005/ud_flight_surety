@@ -129,14 +129,38 @@
 
       <section>
         <h2>Oracle actions</h2>
-        <div class="row top-20">
-          <label class="form">Flight</label>
-          <input type="text" id="flight-number" />
-          <btn class="btn btn-primary" id="submit-oracle"
-            >Submit to Oracles</btn
-          >
+        <div class="top-20">
+          <div class="form-row">
+            <div class="form-group col-md-10">
+              <label for="flight-number">Flight</label>
+              <select class="form-control" id="flight-number">
+                <option>AA100</option>
+                <option>BA2490</option>
+                <option>LH201</option>
+                <option>EZ101</option>
+              </select>
+            </div>
+            <div class="form-group col-md-2">
+              <button class="btn btn-primary" id="submit-oracle">
+                Submit to Oracles
+              </button>
+            </div>
+          </div>
+          <hr />
         </div>
       </section>
+
+
+<!--      <section>-->
+<!--        <h2>Oracle actions</h2>-->
+<!--        <div class="row top-20">-->
+<!--          <label class="form">Flight</label>-->
+<!--          <input type="text" id="flight-number" />-->
+<!--          <btn class="btn btn-primary" id="submit-oracle"-->
+<!--            >Submit to Oracles</btn-->
+<!--          >-->
+<!--        </div>-->
+<!--      </section>-->
     </main>
   </body>
 </html>
