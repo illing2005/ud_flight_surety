@@ -40,6 +40,12 @@ contract FlightSuretyApp {
     mapping(bytes32 => Flight) private flights;
 
     /********************************************************************************************/
+    /*                                       EVENTS                                             */
+    /********************************************************************************************/
+    event AirlineRegistered(address airline);
+    event AirlineVoteAdded(address airline, uint8 votes);
+
+    /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
     /********************************************************************************************/
 
@@ -120,6 +126,7 @@ contract FlightSuretyApp {
         if (flightSuretyData.getFundedAirlinesCount() < 4) {
             votes = 5;
             success = flightSuretyData.registerAirline(_airline, _name);
+            emit AirlineRegistered(_airline);
         } else {
             // check for duplicate votes
             bool isDuplicate = false;
@@ -134,10 +141,12 @@ contract FlightSuretyApp {
             suggestedAirlines[_airline].push(msg.sender);
             // check if airline has enough votes
             votes = suggestedAirlines[_airline].length;
+            emit AirlineVoteAdded(_airline, uint8(votes));
             // TODO: Calc 50% votes threshold
             if (votes > flightSuretyData.getFundedAirlinesCount().div(2)) {
                 success = flightSuretyData.registerAirline(_airline, _name);
                 suggestedAirlines[_airline] = new address[](0); // reset votes, Do we really need this?
+                emit AirlineRegistered(_airline);
             }
         }
         return (success, votes);
