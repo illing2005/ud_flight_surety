@@ -326,17 +326,24 @@ contract FlightSuretyData {
         bytes32 key = getFlightKey(flight);
         for (uint256 i = 0; i < insurances[key].length; i++) {
             Insurance memory flightInsurance = insurances[key][i];
-            flightInsurance.paidOut = true;
-            // calculate insurance amount 1.5 * input
-            uint256 amount = flightInsurance
-                .amount
-                .mul(INSURANCE_PERCENTAGE)
-                .div(100);
-            // credit the passenger with funds
-            passengerFunds[flightInsurance.passenger] = passengerFunds[
-                flightInsurance.passenger
-            ].add(amount);
-            emit PassengerCredited(flight, flightInsurance.passenger, amount);
+            if (!flightInsurance.paidOut) {
+                flightInsurance.paidOut = true;
+                // calculate insurance amount 1.5 * input
+                uint256 amount = flightInsurance
+                    .amount
+                    .mul(INSURANCE_PERCENTAGE)
+                    .div(100);
+                // credit the passenger with funds
+                insurances[key][i] = flightInsurance;
+                passengerFunds[flightInsurance.passenger] = passengerFunds[
+                    flightInsurance.passenger
+                ].add(amount);
+                emit PassengerCredited(
+                    flight,
+                    flightInsurance.passenger,
+                    amount
+                );
+            }
         }
     }
 

@@ -41,7 +41,6 @@ export default class Contract {
       callback();
     });
   }
-
   isOperational(callback) {
     let self = this;
     self.flightSuretyApp.methods
@@ -99,11 +98,26 @@ export default class Contract {
     const value = this.web3.utils.toWei(amount, "ether");
     this.flightSuretyApp.methods
       .buyInsurance(flightNumber)
-      .send(
-        { from: self.passenger, value, gas: 1000000 },
-        (error, result) => {
-          callback(error, { flightNumber });
-        }
-      );
+      .send({ from: self.passenger, value, gas: 1000000 }, (error, result) => {
+        callback(error, { flightNumber });
+      });
+  }
+
+  async getPassengerFunds(callback) {
+    const self = this;
+    this.flightSuretyData.methods
+      .getPassengerFunds(self.passenger)
+      .call({ from: self.owner }, (error, result) => {
+        callback(this.web3.utils.fromWei(result, "ether"));
+      });
+  }
+
+  async withdrawFunds(callback) {
+    const self = this;
+    this.flightSuretyData.methods
+      .pay()
+      .send({ from: self.passenger, gas: 1000000 }, (error, result) => {
+        callback(error, { });
+      });
   }
 }

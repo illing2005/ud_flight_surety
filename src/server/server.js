@@ -5,7 +5,7 @@ import Web3 from "web3";
 import express from "express";
 require("babel-polyfill");
 
-const NUMBER_OF_ORACLES = 10;
+const NUMBER_OF_ORACLES = 30;
 const FLIGHT_STATUS_CODES = [0, 10, 20, 30, 40, 50];
 
 let config = Config["localhost"];
@@ -54,7 +54,7 @@ flightSuretyApp.events.OracleRequest(
               timestamp,
               statusCode
             )
-            .send({ from: oracles[i], gas: 99999 });
+            .send({ from: oracles[i], gas: 5000000, gasPrice: 20000000 });
         } catch (e) {
           console.log(e);
         }
@@ -72,7 +72,7 @@ flightSuretyApp.events.OracleRegistered(
     if (error) console.log(error);
     console.log("OracleRegistered");
     console.log(event.returnValues);
-    console.log('-----------------');
+    console.log("-----------------");
   }
 );
 
@@ -85,7 +85,7 @@ flightSuretyApp.events.OracleReport(
     if (error) console.log(error);
     console.log("OracleReport");
     console.log(event.returnValues);
-    console.log('-----------------');
+    console.log("-----------------");
   }
 );
 
@@ -98,10 +98,22 @@ flightSuretyApp.events.FlightStatusInfo(
     if (error) console.log(error);
     console.log("FlightStatusInfo");
     console.log(event.returnValues);
-    console.log('-----------------');
+    console.log("-----------------");
   }
 );
 
+// listen to PassengerCredited event
+flightSuretyData.events.PassengerCredited(
+  {
+    fromBlock: 0,
+  },
+  function (error, event) {
+    if (error) console.log(error);
+    console.log("PassengerCredited");
+    console.log(event.returnValues);
+    console.log("-----------------");
+  }
+);
 
 async function registerOracles() {
   const fee = await flightSuretyApp.methods.REGISTRATION_FEE().call();

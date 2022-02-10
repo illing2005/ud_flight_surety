@@ -12,6 +12,9 @@ import "./flightsurety.css";
         { label: "Operational Status", error: error, value: result },
       ]);
     });
+    contract.getPassengerFunds((result) => {
+      DOM.elid("passenger-credits").value = result;
+    });
 
     // User-submitted transaction
     DOM.elid("submit-oracle").addEventListener("click", () => {
@@ -32,18 +35,17 @@ import "./flightsurety.css";
       const airlineAddress = DOM.elid("airline-address").value;
       contract.registerAirline(airlineAddress, (error, result) => {
         display("Airline Status", "", [
-        { label: "Register Airline", error: error, value: result.airline },
-      ]);
-      })
-
+          { label: "Register Airline", error: error, value: result.airline },
+        ]);
+      });
     });
 
     DOM.elid("submit-fund").addEventListener("click", () => {
       const amount = DOM.elid("airline-fund").value;
       contract.fundAirline(amount, (error, result) => {
         display("Airline Status", "", [
-            { label: "Fund Airline", error: error, value: `${amount} ETH added` }
-            ]);
+          { label: "Fund Airline", error: error, value: `${amount} ETH added` },
+        ]);
       });
     });
 
@@ -51,8 +53,12 @@ import "./flightsurety.css";
       const flightNumber = DOM.elid("airline-flight").value;
       contract.registerFlight(flightNumber, (error, result) => {
         display("Airline Status", "", [
-            { label: "Flight submitted", error: error, value: `${flightNumber} added` }
-            ]);
+          {
+            label: "Flight submitted",
+            error: error,
+            value: `${flightNumber} added`,
+          },
+        ]);
       });
     });
 
@@ -61,9 +67,28 @@ import "./flightsurety.css";
       const amount = DOM.elid("passenger-fund").value;
       contract.buyInsurance(flightNumber, amount, (error, result) => {
         display("Passenger Status", "", [
-            { label: "Buy insurance", error: error, value: `${amount} ETH insurance for ${flightNumber} bought` }
-            ]);
-      })
+          {
+            label: "Buy insurance",
+            error: error,
+            value: `${amount} ETH insurance for ${flightNumber} bought`,
+          },
+        ]);
+      });
+    });
+
+    DOM.elid("submit-withdraw").addEventListener("click", () => {
+      contract.withdrawFunds((error, result) => {
+        display("Passenger Status", "", [
+          {
+            label: "Funds withdrawn",
+            error: error,
+            value: `All available funds paid out`,
+          },
+        ]);
+        contract.getPassengerFunds((result) => {
+          DOM.elid("passenger-credits").value = result;
+        });
+      });
     });
   });
 })();
