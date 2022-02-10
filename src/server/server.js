@@ -6,6 +6,7 @@ import express from "express";
 require("babel-polyfill");
 
 const NUMBER_OF_ORACLES = 10;
+const FLIGHT_STATUS_CODES = [10, 20, 30, 40, 50];
 
 let config = Config["localhost"];
 let web3 = new Web3(
@@ -28,9 +29,37 @@ flightSuretyApp.events.OracleRequest(
   {
     fromBlock: 0,
   },
-  function (error, event) {
-    if (error) console.log(error);
-    console.log(event);
+  async function (error, event) {
+    const { returnValues } = event;
+    const index = returnValues[0];
+    const airline = returnValues[1];
+    const flightNumber = returnValues[2];
+    const timestamp = returnValues[3];
+
+    for (let i = 0; i < oracles.length; i++) {
+      let statusCode = FLIGHT_STATUS_CODES[Math.floor(Math.random() * FLIGHT_STATUS_CODES.length)];
+
+      let oracleIndices = await flightSuretyApp.methods
+        .getMyIndexes()
+        .call({ from: oracles[i] });
+
+      // only submit response if correct index
+      if (oracleIndices.indexOf(index) >= 0) {
+        try {
+          await flightSuretyApp.methods
+            .submitOracleResponse(
+              index,
+              airline,
+              flightNumber,
+              timestamp,
+              statusCode
+            )
+            .send({ from: oracles[i], gas: 99999 });
+        } catch (e) {
+          console.log(e);
+        }
+      }
+    }
   }
 );
 
@@ -41,9 +70,38 @@ flightSuretyApp.events.OracleRegistered(
   },
   function (error, event) {
     if (error) console.log(error);
-    console.log(event);
+    console.log("OracleRegistered");
+    console.log(event.returnValues);
+    console.log('-----------------');
   }
 );
+
+// listen to OracleReport event
+flightSuretyApp.events.OracleReport(
+  {
+    fromBlock: 0,
+  },
+  function (error, event) {
+    if (error) console.log(error);
+    console.log("OracleReport");
+    console.log(event.returnValues);
+    console.log('-----------------');
+  }
+);
+
+// listen to FlightStatusInfo event
+flightSuretyApp.events.FlightStatusInfo(
+  {
+    fromBlock: 0,
+  },
+  function (error, event) {
+    if (error) console.log(error);
+    console.log("FlightStatusInfo");
+    console.log(event.returnValues);
+    console.log('-----------------');
+  }
+);
+
 
 async function registerOracles() {
   const fee = await flightSuretyApp.methods.REGISTRATION_FEE().call();
