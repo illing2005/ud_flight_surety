@@ -45,6 +45,15 @@ import "./flightsurety.css";
             { label: "Fund Airline", error: error, value: `${amount} ETH added` }
             ]);
       });
+    });
+
+    DOM.elid("submit-flight").addEventListener("click", () => {
+      const flightNumber = DOM.elid("airline-flight").value;
+      contract.registerFlight(flightNumber, (error, result) => {
+        display("Airline Status", "", [
+            { label: "Flight submitted", error: error, value: `${flightNumber} added` }
+            ]);
+      });
     })
   });
 })();

@@ -79,7 +79,16 @@ export default class Contract {
     this.flightSuretyData.methods
       .fund()
       .send({ from: self.mainAirline, value }, (error, result) => {
-        callback(error, {value});
+        callback(error, { value });
+      });
+  }
+
+  async registerFlight(flightNumber, callback) {
+    const self = this;
+    this.flightSuretyApp.methods
+      .registerFlight(flightNumber)
+      .send({ from: self.mainAirline, gas: 1000000 }, (error, result) => {
+        callback(error, { flightNumber });
       });
   }
 }
