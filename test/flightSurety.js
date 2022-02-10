@@ -194,4 +194,20 @@ contract("Flight Surety Tests", async (accounts) => {
       "Airline should have been created after third vote"
     );
   });
+
+  it("(airline) can register new flight", async () => {
+    const flightNumber = "AA100";
+    await config.flightSuretyApp.registerFlight(flightNumber, {
+      from: config.firstAirline,
+    });
+
+    const flight = await config.flightSuretyData.getFlight(
+      flightNumber,
+      config.owner,
+      { from: config.firstAirline }
+    );
+
+    assert.equal(flight[0], true);
+    assert.equal(flight[4], flightNumber);
+  });
 });

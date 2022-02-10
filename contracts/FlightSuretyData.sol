@@ -23,6 +23,23 @@ contract FlightSuretyData {
     uint256 private fundedAirlinesCount = 0;
     mapping(address => Airline) airlines;
 
+    // Flight status codees
+    uint8 private constant STATUS_CODE_UNKNOWN = 0;
+    uint8 private constant STATUS_CODE_ON_TIME = 10;
+    uint8 private constant STATUS_CODE_LATE_AIRLINE = 20;
+    uint8 private constant STATUS_CODE_LATE_WEATHER = 30;
+    uint8 private constant STATUS_CODE_LATE_TECHNICAL = 40;
+    uint8 private constant STATUS_CODE_LATE_OTHER = 50;
+
+    struct Flight {
+        bool isRegistered;
+        uint8 statusCode;
+        uint256 updatedTimestamp;
+        address airline;
+        string flightNumber;
+    }
+    mapping(bytes32 => Flight) private flights;
+
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
@@ -197,6 +214,48 @@ contract FlightSuretyData {
     }
 
     /**
+     * @dev Register a flight for insurance
+     *
+     */
+    function registerFlight(string flightNumber)
+        external
+        requireIsOperational
+        isCallerAuthorized
+    {
+        require(bytes(flightNumber).length > 0);
+        bytes32 key = getFlightKey(flightNumber);
+        require(!flights[key].isRegistered, "Flight is already registered");
+
+        flights[key] = Flight({
+            isRegistered: true,
+            statusCode: STATUS_CODE_UNKNOWN,
+            updatedTimestamp: block.timestamp,
+            airline: msg.sender,
+            flightNumber: flightNumber
+        });
+    }
+
+    function getFlight(string _flightNumber)
+        external
+        view
+        returns (
+            bool isRegistered,
+            uint8 statusCode,
+            uint256 updatedTimestamp,
+            address airline,
+            string flightNumber
+        )
+    {
+        bytes32 key = getFlightKey(_flightNumber);
+        Flight flight = flights[key];
+        isRegistered = flight.isRegistered;
+        statusCode = flight.statusCode;
+        updatedTimestamp = flight.updatedTimestamp;
+        airline = flight.airline;
+        flightNumber = flight.flightNumber;
+    }
+
+    /**
      * @dev Buy insurance for a flight
      *
      */
@@ -230,12 +289,12 @@ contract FlightSuretyData {
         airlines[msg.sender].funds = currentFunds.add(msg.value);
     }
 
-    function getFlightKey(
-        address airline,
-        string memory flight,
-        uint256 timestamp
-    ) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked(airline, flight, timestamp));
+    function getFlightKey(string memory flight)
+        internal
+        pure
+        returns (bytes32)
+    {
+        return keccak256(abi.encodePacked(flight));
     }
 
     /**

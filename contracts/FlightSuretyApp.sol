@@ -16,14 +16,6 @@ contract FlightSuretyApp {
     /*                                       DATA VARIABLES                                     */
     /********************************************************************************************/
 
-    // Flight status codees
-    uint8 private constant STATUS_CODE_UNKNOWN = 0;
-    uint8 private constant STATUS_CODE_ON_TIME = 10;
-    uint8 private constant STATUS_CODE_LATE_AIRLINE = 20;
-    uint8 private constant STATUS_CODE_LATE_WEATHER = 30;
-    uint8 private constant STATUS_CODE_LATE_TECHNICAL = 40;
-    uint8 private constant STATUS_CODE_LATE_OTHER = 50;
-
     address private contractOwner; // Account used to deploy contract
     FlightSuretyData flightSuretyData;
     bool private operational = true;
@@ -31,19 +23,13 @@ contract FlightSuretyApp {
     // Variables for airline register voting
     mapping(address => address[]) private suggestedAirlines;
 
-    struct Flight {
-        bool isRegistered;
-        uint8 statusCode;
-        uint256 updatedTimestamp;
-        address airline;
-    }
-    mapping(bytes32 => Flight) private flights;
-
     /********************************************************************************************/
     /*                                       EVENTS                                             */
     /********************************************************************************************/
     event AirlineRegistered(address airline);
     event AirlineVoteAdded(address airline, uint8 votes);
+
+    event FlightRegistered(string flightNumber);
 
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
@@ -142,7 +128,6 @@ contract FlightSuretyApp {
             // check if airline has enough votes
             votes = suggestedAirlines[_airline].length;
             emit AirlineVoteAdded(_airline, uint8(votes));
-            // TODO: Calc 50% votes threshold
             if (votes > flightSuretyData.getFundedAirlinesCount().div(2)) {
                 success = flightSuretyData.registerAirline(_airline, _name);
                 suggestedAirlines[_airline] = new address[](0); // reset votes, Do we really need this?
@@ -156,7 +141,14 @@ contract FlightSuretyApp {
      * @dev Register a future flight for insuring.
      *
      */
-    function registerFlight() external pure {}
+    function registerFlight(string flightNumber)
+        public
+        requireIsOperational
+        requireAirlineIsFunded
+    {
+        flightSuretyData.registerFlight(flightNumber);
+        emit FlightRegistered(flightNumber);
+    }
 
     /**
      * @dev Called after oracle has updated flight status
@@ -365,4 +357,6 @@ contract FlightSuretyData {
         returns (bool);
 
     function isAirlineFunded(address _airline) external returns (bool);
+
+    function registerFlight(string flightNumber) external;
 }
