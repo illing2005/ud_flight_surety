@@ -23,6 +23,8 @@ contract FlightSuretyApp {
     // Variables for airline register voting
     mapping(address => address[]) private suggestedAirlines;
 
+    uint256 private constant MAX_INSURANCE_VALUE = 1 ether;
+
     /********************************************************************************************/
     /*                                       EVENTS                                             */
     /********************************************************************************************/
@@ -30,6 +32,12 @@ contract FlightSuretyApp {
     event AirlineVoteAdded(address airline, uint8 votes);
 
     event FlightRegistered(string flightNumber);
+
+    event InsuranceBought(
+        address passenger,
+        uint256 amount,
+        string flightNumber
+    );
 
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
@@ -148,6 +156,30 @@ contract FlightSuretyApp {
     {
         flightSuretyData.registerFlight(flightNumber);
         emit FlightRegistered(flightNumber);
+    }
+
+    function buyInsurance(string flightNumber)
+        public
+        payable
+        requireIsOperational
+    {
+        require(msg.value <= MAX_INSURANCE_VALUE, "Max allowed is 1 eht");
+        require(msg.value > 0, "Value needs to be greater than 0");
+        require(
+            flightSuretyData.isFlightRegistered(flightNumber),
+            "Flight is not registered"
+        );
+        require(
+            !flightSuretyData.isPassengerInsuredForFlight(
+                flightNumber,
+                msg.sender
+            ),
+            "Passenger already has insurance"
+        );
+
+        flightSuretyData.buy.value(msg.value)(flightNumber);
+
+        emit InsuranceBought(msg.sender, msg.value, flightNumber);
     }
 
     /**
@@ -359,4 +391,15 @@ contract FlightSuretyData {
     function isAirlineFunded(address _airline) external returns (bool);
 
     function registerFlight(string flightNumber) external;
+
+    function isFlightRegistered(string _flightNumber)
+        external
+        view
+        returns (bool);
+
+    function buy(string flightNumber) external payable;
+
+    function isPassengerInsuredForFlight(string flightNumber, address passenger)
+        external
+        returns (bool);
 }

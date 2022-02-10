@@ -210,4 +210,85 @@ contract("Flight Surety Tests", async (accounts) => {
     assert.equal(flight[0], true);
     assert.equal(flight[4], flightNumber);
   });
+
+  it("(passenger) can buy insurance only for registered flights", async () => {
+    const wrongFlightNumber = "DOES_NOT_EXIST";
+
+    let reverted = false;
+    try {
+      await config.flightSuretyApp.buyInsurance(wrongFlightNumber, {
+        from: config.passenger,
+        value: 1000,
+      });
+    } catch (e) {
+      reverted = true;
+    }
+
+    assert.equal(
+      reverted,
+      true,
+      "Passenger should not be able to buy for unregistered flight"
+    );
+  });
+
+  it("(passenger) can buy insurance only up to 1 eth", async () => {
+    const flightNumber = "AA100";
+    let amount = web3.utils.toWei("2", "ether");
+    let reverted = false;
+    try {
+      await config.flightSuretyApp.buyInsurance(flightNumber, {
+        from: config.passenger,
+        value: amount,
+      });
+    } catch (e) {
+      reverted = true;
+    }
+
+    assert.equal(
+      reverted,
+      true,
+      "Passenger should not be able to buy more than 1 eth"
+    );
+  });
+
+  it("(passenger) can buy insurance for a flight", async () => {
+    const flightNumber = "AA100";
+    let amount = web3.utils.toWei("1", "ether");
+
+    const balanceBefore = parseInt(
+      await web3.eth.getBalance(config.flightSuretyData.address)
+    );
+
+    const passengerInsured1 =
+      await config.flightSuretyData.isPassengerInsuredForFlight.call(
+        flightNumber,
+        config.passenger
+      );
+
+    await config.flightSuretyApp.buyInsurance(flightNumber, {
+      from: config.passenger,
+      value: amount,
+    });
+    const balanceAfter = parseInt(
+      await web3.eth.getBalance(config.flightSuretyData.address)
+    );
+
+    const passengerInsured =
+      await config.flightSuretyData.isPassengerInsuredForFlight.call(
+        flightNumber,
+        config.passenger
+      );
+
+    assert.equal(
+      balanceAfter,
+      balanceBefore + parseInt(amount),
+      "Value should be credited to data contract"
+    );
+
+    assert.equal(
+      passengerInsured,
+      true,
+      "Passenger should be insured for flight"
+    );
+  });
 });

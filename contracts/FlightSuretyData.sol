@@ -40,6 +40,15 @@ contract FlightSuretyData {
     }
     mapping(bytes32 => Flight) private flights;
 
+    struct Insurance {
+        address passenger;
+        uint256 amount;
+        string flightNumber;
+        bool paidOut;
+    }
+
+    mapping(bytes32 => Insurance[]) private insurances;
+
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
@@ -247,7 +256,7 @@ contract FlightSuretyData {
         )
     {
         bytes32 key = getFlightKey(_flightNumber);
-        Flight flight = flights[key];
+        Flight memory flight = flights[key];
         isRegistered = flight.isRegistered;
         statusCode = flight.statusCode;
         updatedTimestamp = flight.updatedTimestamp;
@@ -255,11 +264,49 @@ contract FlightSuretyData {
         flightNumber = flight.flightNumber;
     }
 
+    function isFlightRegistered(string _flightNumber)
+        external
+        view
+        returns (bool)
+    {
+        return flights[getFlightKey(_flightNumber)].isRegistered;
+    }
+
     /**
      * @dev Buy insurance for a flight
      *
      */
-    function buy() external payable {}
+    function buy(string flightNumber)
+        external
+        payable
+        requireIsOperational
+        isCallerAuthorized
+    {
+        bytes32 key = getFlightKey(flightNumber);
+        insurances[key].push(
+            Insurance({
+                passenger: tx.origin,
+                amount: msg.value,
+                flightNumber: flightNumber,
+                paidOut: false
+            })
+        );
+    }
+
+    function isPassengerInsuredForFlight(string flightNumber, address passenger)
+        external
+        view
+        returns (bool)
+    {
+        bytes32 key = getFlightKey(flightNumber);
+        Insurance[] memory flightInsurances = insurances[key];
+        for (uint256 i = 0; i < flightInsurances.length; i++) {
+            if (flightInsurances[i].passenger == passenger) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     /**
      *  @dev Credits payouts to insurees
