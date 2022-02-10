@@ -6,7 +6,7 @@ import express from "express";
 require("babel-polyfill");
 
 const NUMBER_OF_ORACLES = 10;
-const FLIGHT_STATUS_CODES = [10, 20, 30, 40, 50];
+const FLIGHT_STATUS_CODES = [0, 10, 20, 30, 40, 50];
 
 let config = Config["localhost"];
 let web3 = new Web3(

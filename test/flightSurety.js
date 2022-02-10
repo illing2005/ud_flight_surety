@@ -259,12 +259,6 @@ contract("Flight Surety Tests", async (accounts) => {
       await web3.eth.getBalance(config.flightSuretyData.address)
     );
 
-    const passengerInsured1 =
-      await config.flightSuretyData.isPassengerInsuredForFlight.call(
-        flightNumber,
-        config.passenger
-      );
-
     await config.flightSuretyApp.buyInsurance(flightNumber, {
       from: config.passenger,
       value: amount,
@@ -290,5 +284,49 @@ contract("Flight Surety Tests", async (accounts) => {
       true,
       "Passenger should be insured for flight"
     );
+  });
+
+  it("(oracles) can process flight status and passenger gets credited", async () => {
+    const flightNumber = "AA100";
+    const airline = config.firstAirline;
+    const timestamp = 123;
+    const statusCode = 20;
+
+    await config.flightSuretyApp.processFlightStatus(
+      airline,
+      flightNumber,
+      timestamp,
+      statusCode,
+      {
+        from: config.owner,
+      }
+    );
+
+    const flight = await config.flightSuretyData.getFlight.call(
+      flightNumber,
+      config.owner,
+      { from: config.firstAirline }
+    );
+
+    const passengerFunds = await config.flightSuretyData.getPassengerFunds.call(
+      config.passenger
+    );
+    assert.equal(parseInt(passengerFunds), web3.utils.toWei("1.5", "ether"));
+    assert.equal(parseInt(flight[1]), 20);
+  });
+
+  it("(passenger) can payout funds", async () => {
+    const passenger = config.passenger;
+    const balanceBefore = parseInt(await web3.eth.getBalance(passenger));
+    await config.flightSuretyData.pay({
+      from: passenger,
+    });
+    const passengerFunds = await config.flightSuretyData.getPassengerFunds.call(
+      config.passenger
+    );
+    const balanceAfter = parseInt(await web3.eth.getBalance(passenger));
+
+    assert.isAbove(balanceAfter, balanceBefore);
+    assert.equal(parseInt(passengerFunds), 0);
   });
 });

@@ -15,6 +15,13 @@ contract FlightSuretyApp {
     /********************************************************************************************/
     /*                                       DATA VARIABLES                                     */
     /********************************************************************************************/
+    // Flight status codes
+    uint8 private constant STATUS_CODE_UNKNOWN = 0;
+    uint8 private constant STATUS_CODE_ON_TIME = 10;
+    uint8 private constant STATUS_CODE_LATE_AIRLINE = 20;
+    uint8 private constant STATUS_CODE_LATE_WEATHER = 30;
+    uint8 private constant STATUS_CODE_LATE_TECHNICAL = 40;
+    uint8 private constant STATUS_CODE_LATE_OTHER = 50;
 
     address private contractOwner; // Account used to deploy contract
     FlightSuretyData flightSuretyData;
@@ -190,8 +197,20 @@ contract FlightSuretyApp {
         address airline,
         string memory flight,
         uint256 timestamp,
-        uint8 statusCode
-    ) internal pure {}
+        uint8 statusCode // TODO: This is public for easier testing. Should be switched back to internal before deployment
+    ) public requireIsOperational {
+        bytes32 key = keccak256(abi.encodePacked(flight));
+        require(
+            flightSuretyData.isFlightRegistered(flight),
+            "Flight is not registered"
+        );
+
+        flightSuretyData.updateFlightStatus(flight, statusCode, timestamp);
+
+        if (statusCode == STATUS_CODE_LATE_AIRLINE) {
+            flightSuretyData.creditInsurees(flight);
+        }
+    }
 
     // Generate a request for oracles to fetch flight information
     function fetchFlightStatus(
@@ -270,10 +289,7 @@ contract FlightSuretyApp {
         uint256 timestamp
     );
 
-    event OracleRegistered(
-        address id,
-        uint8[3] indexes
-    );
+    event OracleRegistered(address id, uint8[3] indexes);
 
     // Register an oracle with the contract
     function registerOracle() external payable {
@@ -403,9 +419,17 @@ contract FlightSuretyData {
         view
         returns (bool);
 
+    function updateFlightStatus(
+        string _flightNumber,
+        uint8 _statusCode,
+        uint256 _timestamp
+    ) external;
+
     function buy(string flightNumber) external payable;
 
     function isPassengerInsuredForFlight(string flightNumber, address passenger)
         external
         returns (bool);
+
+    function creditInsurees(string flight) external;
 }

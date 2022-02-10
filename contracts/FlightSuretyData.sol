@@ -8,6 +8,7 @@ contract FlightSuretyData {
     /********************************************************************************************/
     /*                                       DATA VARIABLES                                     */
     /********************************************************************************************/
+    uint256 private constant INSURANCE_PERCENTAGE = 150;
 
     address private contractOwner; // Account used to deploy contract
     bool private operational = true; // Blocks all state changes throughout the contract if false
@@ -22,14 +23,6 @@ contract FlightSuretyData {
     uint256 private airlinesCount = 0;
     uint256 private fundedAirlinesCount = 0;
     mapping(address => Airline) airlines;
-
-    // Flight status codees
-    uint8 private constant STATUS_CODE_UNKNOWN = 0;
-    uint8 private constant STATUS_CODE_ON_TIME = 10;
-    uint8 private constant STATUS_CODE_LATE_AIRLINE = 20;
-    uint8 private constant STATUS_CODE_LATE_WEATHER = 30;
-    uint8 private constant STATUS_CODE_LATE_TECHNICAL = 40;
-    uint8 private constant STATUS_CODE_LATE_OTHER = 50;
 
     struct Flight {
         bool isRegistered;
@@ -49,9 +42,13 @@ contract FlightSuretyData {
 
     mapping(bytes32 => Insurance[]) private insurances;
 
+    mapping(address => uint256) private passengerFunds;
+
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
+    event PassengerCredited(string flight, address passenger, uint256 amount);
+    event PayoutPassenger(address passenger, uint256 amount);
 
     /**
      * @dev Constructor
@@ -237,11 +234,21 @@ contract FlightSuretyData {
 
         flights[key] = Flight({
             isRegistered: true,
-            statusCode: STATUS_CODE_UNKNOWN,
+            statusCode: 0,
             updatedTimestamp: block.timestamp,
             airline: msg.sender,
             flightNumber: flightNumber
         });
+    }
+
+    function updateFlightStatus(
+        string _flightNumber,
+        uint8 _statusCode,
+        uint256 _timestamp
+    ) external requireIsOperational isCallerAuthorized {
+        bytes32 key = getFlightKey(_flightNumber);
+        flights[key].updatedTimestamp = _timestamp;
+        flights[key].statusCode = _statusCode;
     }
 
     function getFlight(string _flightNumber)
@@ -311,13 +318,52 @@ contract FlightSuretyData {
     /**
      *  @dev Credits payouts to insurees
      */
-    function creditInsurees() external pure {}
+    function creditInsurees(string flight)
+        external
+        requireIsOperational
+        isCallerAuthorized
+    {
+        bytes32 key = getFlightKey(flight);
+        for (uint256 i = 0; i < insurances[key].length; i++) {
+            Insurance memory flightInsurance = insurances[key][i];
+            flightInsurance.paidOut = true;
+            // calculate insurance amount 1.5 * input
+            uint256 amount = flightInsurance
+                .amount
+                .mul(INSURANCE_PERCENTAGE)
+                .div(100);
+            // credit the passenger with funds
+            passengerFunds[flightInsurance.passenger] = passengerFunds[
+                flightInsurance.passenger
+            ].add(amount);
+            emit PassengerCredited(flight, flightInsurance.passenger, amount);
+        }
+    }
+
+    function getPassengerFunds(address passenger)
+        public
+        view
+        requireIsOperational
+        returns (uint256)
+    {
+        return passengerFunds[passenger];
+    }
 
     /**
      *  @dev Transfers eligible payout funds to insuree
      *
      */
-    function pay() external pure {}
+    function pay() external payable {
+        uint256 amount = passengerFunds[msg.sender];
+        require(passengerFunds[msg.sender] > 0, "You don't have any credits");
+        require(
+            address(this).balance >= amount,
+            "Contract has insufficient funds."
+        );
+        passengerFunds[msg.sender] = 0;
+        msg.sender.transfer(amount);
+        emit PayoutPassenger(msg.sender, amount);
+    }
 
     /**
      * @dev Initial funding for the insurance. Unless there are too many delayed flights
