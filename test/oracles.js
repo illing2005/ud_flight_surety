@@ -1,19 +1,19 @@
 var Test = require("../config/testConfig.js");
 //var BigNumber = require('bignumber.js');
 
+// Watch contract events
+const STATUS_CODE_UNKNOWN = 0;
+const STATUS_CODE_ON_TIME = 10;
+const STATUS_CODE_LATE_AIRLINE = 20;
+const STATUS_CODE_LATE_WEATHER = 30;
+const STATUS_CODE_LATE_TECHNICAL = 40;
+const STATUS_CODE_LATE_OTHER = 50;
+
 contract("Oracles", async (accounts) => {
   const TEST_ORACLES_COUNT = 20;
   var config;
   before("setup contract", async () => {
     config = await Test.Config(accounts);
-
-    // Watch contract events
-    const STATUS_CODE_UNKNOWN = 0;
-    const STATUS_CODE_ON_TIME = 10;
-    const STATUS_CODE_LATE_AIRLINE = 20;
-    const STATUS_CODE_LATE_WEATHER = 30;
-    const STATUS_CODE_LATE_TECHNICAL = 40;
-    const STATUS_CODE_LATE_OTHER = 50;
   });
 
   it("can register oracles", async () => {
@@ -52,6 +52,8 @@ contract("Oracles", async (accounts) => {
     // loop through all the accounts and for each account, all its Indexes (indices?)
     // and submit a response. The contract will reject a submission if it was
     // not requested so while sub-optimal, it's a good test of that feature
+    let success = 0;
+    let failed = 0;
     for (let a = 1; a < TEST_ORACLES_COUNT; a++) {
       // Get oracle information
       let oracleIndexes = await config.flightSuretyApp.getMyIndexes.call({
@@ -68,17 +70,23 @@ contract("Oracles", async (accounts) => {
             STATUS_CODE_ON_TIME,
             { from: accounts[a] }
           );
+          success++;
         } catch (e) {
           // Enable this when debugging
-          console.log(
-            "\nError",
-            idx,
-            oracleIndexes[idx].toNumber(),
-            flight,
-            timestamp
-          );
+          // console.log(
+          //   "\nError",
+          //   idx,
+          //   oracleIndexes[idx].toNumber(),
+          //   flight,
+          //   timestamp
+          // );
+          failed++;
         }
       }
     }
+
+    assert.isAbove(success, 0);
+    assert.isAbove(failed, 0);
+
   });
 });

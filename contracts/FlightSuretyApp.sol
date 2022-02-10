@@ -270,6 +270,11 @@ contract FlightSuretyApp {
         uint256 timestamp
     );
 
+    event OracleRegistered(
+        address id,
+        uint8[3] indexes
+    );
+
     // Register an oracle with the contract
     function registerOracle() external payable {
         // Require registration fee
@@ -278,6 +283,7 @@ contract FlightSuretyApp {
         uint8[3] memory indexes = generateIndexes(msg.sender);
 
         oracles[msg.sender] = Oracle({isRegistered: true, indexes: indexes});
+        emit OracleRegistered(msg.sender, indexes);
     }
 
     function getMyIndexes() external view returns (uint8[3]) {
